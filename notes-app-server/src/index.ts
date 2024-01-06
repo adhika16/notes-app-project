@@ -14,7 +14,7 @@ app.get("/api/notes", async (req, res) => {
 });
 
 app.post("/api/notes", async (req, res) => {
-  const { title, content } = req.body;
+  const { title, content, userId } = req.body;
 
   if (!title || !content) {
     return res.status(400).send("title and content fields required");
@@ -22,7 +22,7 @@ app.post("/api/notes", async (req, res) => {
 
   try {
     const note = await prisma.note.create({
-      data: { title, content },
+      data: { title, content, userId },
     });
     res.json(note);
   } catch (error) {
