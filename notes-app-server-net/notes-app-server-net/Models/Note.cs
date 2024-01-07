@@ -10,4 +10,6 @@ public partial class Note
     public string Title { get; set; } = null!;
 
     public string Content { get; set; } = null!;
+
+    public string UserId { get; set; } = null!;
 }

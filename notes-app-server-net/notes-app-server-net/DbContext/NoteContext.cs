@@ -32,6 +32,9 @@ public partial class NoteContext : Microsoft.EntityFrameworkCore.DbContext
             entity.Property(e => e.Id).HasColumnName("id");
             entity.Property(e => e.Content).HasColumnName("content");
             entity.Property(e => e.Title).HasColumnName("title");
+            entity.Property(e => e.UserId)
+                .HasMaxLength(255)
+                .HasColumnName("userId");
         });
 
         OnModelCreatingPartial(modelBuilder);
