@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using notes_app_server_net.Attributes;
 using notes_app_server_net.DbContext;
 using notes_app_server_net.Models;
 
@@ -14,6 +15,7 @@ namespace notes_app_server_net.Controllers
     [Route("api/[controller]")]
     [ApiController]
     [Authorize]
+    [GetUserIdFilter]
     public class NotesController : ControllerBase
     {
         private readonly NoteContext _context;
@@ -27,18 +29,43 @@ namespace notes_app_server_net.Controllers
         [HttpGet]
         public async Task<ActionResult<IEnumerable<Note>>> GetNotes()
         {
-            return await _context.Notes.ToListAsync();
+            string? userIdOrSub = HttpContext.Items["userIdOrSub"] as string;
+            // Filter the notes based on userIdOrSub
+            if (userIdOrSub is not null)
+            {
+                return await _context.Notes.Where(n => n.UserId == userIdOrSub).OrderByDescending(n => n.Id).ToListAsync();
+            }
+            else
+            {
+                // Handle the case where userIdOrSub is null
+                return NotFound();
+            }
         }
 
         // GET: api/Notes/5
         [HttpGet("{id}")]
         public async Task<ActionResult<Note>> GetNote(int id)
         {
-            var note = await _context.Notes.FindAsync(id);
+            string? userIdOrSub = HttpContext.Items["userIdOrSub"] as string;
 
+            // Filter and retrieve the note
+            var note = await _context.Notes
+                                    .Where(n => n.Id == id && n.UserId == userIdOrSub)
+                                    .FirstOrDefaultAsync();
+
+            // Handle cases where the note is not found or userIdOrSub is null
             if (note == null)
             {
-                return NotFound();
+                if (userIdOrSub is null)
+                {
+                    // Handle the case where userIdOrSub is missing
+                    return BadRequest("Missing user information");
+                }
+                else
+                {
+                    // Note not found for the given user
+                    return NotFound();
+                }
             }
 
             return note;
@@ -54,6 +81,20 @@ namespace notes_app_server_net.Controllers
                 return BadRequest();
             }
 
+            // Retrieve userIdOrSub from HttpContext
+            string? userIdOrSub = HttpContext.Items["userIdOrSub"] as string;
+
+            // Compare userIds and handle mismatches
+            if (userIdOrSub != note.UserId)
+            {
+                return BadRequest("UserId mismatch");
+            }
+
+            // Attach or update the note in the context
+            if (_context.Entry(note).State == EntityState.Detached)
+            {
+                _context.Attach(note);
+            }
             _context.Entry(note).State = EntityState.Modified;
 
             try
@@ -80,6 +121,16 @@ namespace notes_app_server_net.Controllers
         [HttpPost]
         public async Task<ActionResult<Note>> PostNote(Note note)
         {
+            // Retrieve userIdOrSub from HttpContext
+            string? userIdOrSub = HttpContext.Items["userIdOrSub"] as string;
+
+            // Compare userIds and handle mismatches
+            if (userIdOrSub != note.UserId)
+            {
+                return BadRequest("UserId mismatch");
+            }
+
+            // Add the note to the context and save changes
             _context.Notes.Add(note);
             await _context.SaveChangesAsync();
 
@@ -90,12 +141,23 @@ namespace notes_app_server_net.Controllers
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteNote(int id)
         {
+            // Retrieve userIdOrSub from HttpContext
+            string? userIdOrSub = HttpContext.Items["userIdOrSub"] as string;
+
+            // Retrieve the note
             var note = await _context.Notes.FindAsync(id);
             if (note == null)
             {
                 return NotFound();
             }
 
+            // Compare userIds and handle mismatches
+            if (userIdOrSub != note.UserId)
+            {
+                return BadRequest("UserId mismatch");
+            }
+
+            // Delete the note
             _context.Notes.Remove(note);
             await _context.SaveChangesAsync();
 
