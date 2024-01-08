@@ -3,25 +3,32 @@ import { useAuth0 } from "@auth0/auth0-react";
 import "./notes.css";
 import Note from "../../interfaces/note-interface";
 import { getNotes, createNote, updateNote, deleteNote } from "../../services/message.service";
+import AlertMessage from "../alert/alert";
 
 const Notes = () => {
   const [notes, setNotes] = useState<Note[]>([]);
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
   const [selectedNote, setSelectedNote] = useState<Note | null>(null);
+  const [errorMessage, setErrorMessage] = useState("");
 
-  const { getAccessTokenSilently } = useAuth0();
+  const { getAccessTokenSilently, user } = useAuth0();
 
   useEffect(() => {
     const fetchNotes = async () => {
       try {
         const accessToken = await getAccessTokenSilently();
         const { data, error } = await getNotes(accessToken);
-        const notes: Note[] = data || [];
-        notes.sort((a,b)=>b.id-a.id); // newer data first
 
+        if (error) {
+          setErrorMessage(error.message);
+          return;
+        }
+
+        const notes: Note[] = data || [];
         setNotes(notes);
       } catch (e) {
+        setErrorMessage("Something went wrong. Please try again.");
         console.log(e);
       }
     };
@@ -31,19 +38,27 @@ const Notes = () => {
 
   const handleAddNote = async (event: React.FormEvent) => {
     event.preventDefault();
+
     try {
       const accessToken = await getAccessTokenSilently();
       const { data, error } = await createNote(accessToken, {
         title,
         content,
+        userId: user?.sub,
       });
-      const newNote = data;
 
+      if (error) {
+        setErrorMessage(error.message);
+        return;
+      }
+
+      const newNote = data;
       setNotes([newNote, ...notes]);
       setTitle("");
       setContent("");
     } catch (e) {
-      console.log(e);
+      setErrorMessage("Something went wrong. Please try again.");
+      console.error(e);
     }
   };
 
@@ -66,7 +81,14 @@ const Notes = () => {
         id: selectedNote.id,
         title,
         content,
+        userId: user?.sub,
       });
+
+      if (error) {
+        setErrorMessage(error.message);
+        return;
+      }
+
       const updatedNote = data;
 
       const updatedNotesList = notes.map((note) => (note.id === selectedNote.id ? updatedNote : note));
@@ -76,6 +98,7 @@ const Notes = () => {
       setContent("");
       setSelectedNote(null);
     } catch (e) {
+      setErrorMessage("Something went wrong. Please try again.");
       console.log(e);
     }
   };
@@ -92,16 +115,24 @@ const Notes = () => {
     try {
       const accessToken = await getAccessTokenSilently();
       const { data, error } = await deleteNote(accessToken, noteId);
+
+      if (error) {
+        setErrorMessage(error.message);
+        return;
+      }
+
       const updatedNotes = notes.filter((note) => note.id !== noteId);
 
       setNotes(updatedNotes);
     } catch (e) {
+      setErrorMessage("Something went wrong. Please try again.");
       console.log(e);
     }
   };
 
   return (
     <div className="content-layout">
+      {errorMessage !== "" && <AlertMessage status="danger" message={errorMessage}/>}
       <div className="app-container">
         <form className="note-form" onSubmit={(event) => (selectedNote ? handleUpdateNote(event) : handleAddNote(event))}>
           <input value={title} onChange={(event) => setTitle(event.target.value)} placeholder="Title" required></input>
