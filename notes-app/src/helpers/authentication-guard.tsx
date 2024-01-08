@@ -9,7 +9,7 @@ interface AuthenticationGuardProps {
 export const AuthenticationGuard: React.FC<AuthenticationGuardProps> = ({ component }) => {
   const Component = withAuthenticationRequired(component, {
     onRedirecting: () => (
-      <div className="page-layout">
+      <div>
         <PageLoader />
       </div>
     ),

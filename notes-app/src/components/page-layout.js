@@ -1,15 +1,21 @@
 import React from "react";
-import { NavBar } from "./navbar/desktop/nav-bar";
-import { MobileNavBar } from "./navbar/mobile/mobile-nav-bar";
-// import { PageFooter } from "./page-footer";
+import NavBar from "./navbar/navbar";
+import { Container, Row, Col } from "reactstrap";
 
 export const PageLayout = ({ children }) => {
   return (
-    <div className="page-layout">
-      <NavBar />
-      <MobileNavBar />
-      <div className="page-layout__content">{children}</div>
-      {/* <PageFooter /> */}
-    </div>
+    <>
+      <Container fluid style={{ height: '100vh', fontFamily: 'Space Grotesk' }}>
+        <Row>
+          <Col className="bg-light border"><NavBar /></Col>
+        </Row>
+        <Row style={{ height: '100%' }}>
+          <Col className="bg-light border">
+            {children}
+          </Col>
+        </Row>
+
+      </Container>
+    </>
   );
 };

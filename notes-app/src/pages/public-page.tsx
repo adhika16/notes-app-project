@@ -7,9 +7,9 @@ const PublicPage = () => {
 
   return (
     <PageLayout>
-      <div className="content-layout">
-        {!isAuthenticated && <div className="content__body">Hi, welcome to Notes app! Please login to continue.</div>}
-        {isAuthenticated && <div className="content__body">Hi, welcome to Notes app!</div>}
+      <div>
+        {!isAuthenticated && <div>Hi, welcome to Notes app! Please login to continue.</div>}
+        {isAuthenticated && <div>Hi, welcome to Notes app!</div>}
       </div>
     </PageLayout>
   );
